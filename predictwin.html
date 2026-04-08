@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>predict.win</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'IBM Plex Mono', monospace; background: #f7f5f0; color: #111; font-size: 14px; line-height: 1.5; }
+  a { color: inherit; text-decoration: none; }
+  header { padding: 22px 32px; border-bottom: 1px solid #ddd; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: #f7f5f0; z-index: 10; }
+  .logo { font-weight: 500; font-size: 15px; letter-spacing: -0.3px; cursor: pointer; }
+  .logo em { font-style: normal; color: #888; }
+  nav { display: flex; gap: 0; }
+  nav button { background: none; border: none; font-family: inherit; font-size: 13px; color: #999; cursor: pointer; padding: 6px 14px; border-bottom: 1px solid transparent; transition: color 0.1s, border-color 0.1s; }
+  nav button:hover { color: #111; }
+  nav button.on { color: #111; border-bottom-color: #111; }
+  .timer { font-size: 12px; color: #999; }
+  main { max-width: 580px; margin: 0 auto; padding: 36px 24px; }
+  .page { display: none; }
+  .page.on { display: block; }
+  .section-label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: #aaa; margin-bottom: 14px; }
+  .item { padding: 16px 0; border-bottom: 1px solid #e5e3de; display: flex; gap: 14px; align-items: flex-start; }
+  .item-body { flex: 1; }
+  .item-text { font-size: 14px; color: #111; margin-bottom: 10px; }
+  .item-tag { display: inline-block; font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; background: #111; color: #f7f5f0; padding: 2px 7px; border-radius: 2px; margin-bottom: 8px; }
+  .item-tag.winner { background: #2a9d8f; }
+  .item-tag.paused { background: #f59e0b; }
+  .item-locked { opacity: 0.6; }
+  .item-votes { display: flex; align-items: center; gap: 10px; }
+  .vbtn { background: none; border: 1px solid #ddd; font-family: inherit; font-size: 11px; color: #888; cursor: pointer; padding: 3px 10px; border-radius: 2px; transition: all 0.1s; }
+  .vbtn:hover { border-color: #111; color: #111; }
+  .vbtn.up { border-color: #111; color: #111; }
+  .vbtn.dn { border-color: #c00; color: #c00; }
+  .vbtn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .net { font-size: 11px; color: #aaa; }
+  .shuffle { margin-top: 24px; background: none; border: 1px solid #ddd; font-family: inherit; font-size: 12px; color: #aaa; padding: 10px 20px; cursor: pointer; border-radius: 2px; width: 100%; transition: all 0.1s; }
+  .shuffle:hover { border-color: #999; color: #555; }
+  .spacer { height: 28px; }
+  .lb-row { display: flex; align-items: baseline; padding: 14px 0; border-bottom: 1px solid #e5e3de; gap: 16px; }
+  .lb-row.winner { background: #f0fdf4; }
+  .lb-n { font-size: 11px; color: #aaa; width: 22px; flex-shrink: 0; }
+  .lb-n.hi { color: #111; font-weight: 500; }
+  .lb-t { flex: 1; font-size: 13px; }
+  .lb-score { font-size: 11px; color: #888; white-space: nowrap; }
+  .submit-h { font-size: 18px; font-weight: 400; margin-bottom: 6px; }
+  .submit-sub { font-size: 12px; color: #888; margin-bottom: 32px; line-height: 1.7; }
+  label { display: block; font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: #aaa; margin-bottom: 8px; }
+  textarea, input[type="email"] { width: 100%; background: #fff; border: 1px solid #ddd; border-radius: 2px; font-family: inherit; font-size: 13px; color: #111; padding: 12px; outline: none; margin-bottom: 20px; transition: border-color 0.1s; }
+  textarea { height: 110px; resize: none; }
+  textarea:focus, input[type="email"]:focus { border-color: #111; }
+  .radio-group { display: flex; gap: 10px; margin-bottom: 24px; }
+  .radio-opt { flex: 1; border: 1px solid #ddd; border-radius: 2px; padding: 12px; cursor: pointer; transition: border-color 0.1s, background 0.1s; }
+  .radio-opt.on { border-color: #111; background: #fff; }
+  .radio-opt .rt { font-size: 13px; margin-bottom: 3px; }
+  .radio-opt .rd { font-size: 11px; color: #999; }
+  .submit-btn { width: 100%; background: #111; border: none; color: #f7f5f0; font-family: inherit; font-size: 13px; padding: 13px; cursor: pointer; border-radius: 2px; transition: opacity 0.1s; letter-spacing: 0.3px; }
+  .submit-btn:hover { opacity: 0.82; }
+  .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .legal { font-size: 10px; color: #bbb; text-align: center; margin-top: 16px; line-height: 1.8; }
+  .toast { display: none; margin-top: 14px; background: #fff; border: 1px solid #ddd; padding: 12px 16px; font-size: 12px; color: #555; border-radius: 2px; text-align: center; }
+  .success-banner { display: none; background: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 12px 16px; font-size: 12px; border-radius: 2px; text-align: center; margin-bottom: 20px; }
+  .success-banner.on { display: block; }
+  .cooldown-text { font-size: 11px; color: #888; margin-top: 4px; }
+  .rate-limit-msg { font-size: 11px; color: #f59e0b; margin-top: 4px; }
+  .onboard-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); z-index: 1000; align-items: center; justify-content: center; }
+  .onboard-overlay.on { display: flex; }
+  .onboard-modal { background: #fff; border-radius: 12px; max-width: 420px; width: 90%; padding: 32px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+  .onboard-step { display: none; }
+  .onboard-step.on { display: block; }
+  .onboard-icon { width: 48px; height: 48px; margin: 0 auto 16px; }
+  .onboard-icon svg { width: 100%; height: 100%; stroke: #111; stroke-width: 1.5; fill: none; }
+  .onboard-title { font-size: 18px; font-weight: 500; margin-bottom: 12px; text-align: center; }
+  .onboard-text { font-size: 13px; color: #666; line-height: 1.7; margin-bottom: 20px; text-align: center; }
+  .onboard-highlight { display: inline-block; background: #f0f0f0; padding: 2px 8px; border-radius: 3px; font-size: 12px; }
+  .onboard-btns { display: flex; gap: 10px; }
+  .onboard-btn { flex: 1; padding: 12px; border-radius: 3px; font-family: inherit; font-size: 13px; cursor: pointer; transition: opacity 0.1s; }
+  .onboard-btn:hover { opacity: 0.85; }
+  .onboard-btn.primary { background: #111; color: #fff; border: none; }
+  .onboard-btn.secondary { background: #fff; color: #888; border: 1px solid #ddd; }
+  .onboard-dots { display: flex; justify-content: center; gap: 8px; margin-bottom: 20px; }
+  .onboard-dot { width: 6px; height: 6px; border-radius: 50%; background: #ddd; }
+  .onboard-dot.on { background: #111; }
+  .onboard-skip { text-align: center; margin-top: 16px; }
+  .onboard-skip button { background: none; border: none; font-family: inherit; font-size: 11px; color: #aaa; cursor: pointer; }
+  .onboard-skip button:hover { color: #666; }
+  
+  @media (max-width: 600px) {
+    * { -webkit-tap-highlight-color: transparent; }
+    
+    header { padding: 16px 16px; flex-wrap: wrap; gap: 10px; }
+    .logo { font-size: 14px; }
+    .timer { font-size: 10px; order: 3; width: 100%; text-align: center; }
+    nav { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+    nav::-webkit-scrollbar { display: none; }
+    nav button { padding: 6px 10px; font-size: 12px; white-space: nowrap; }
+    
+    main { padding: 20px 16px; }
+    .section-label { font-size: 9px; margin-bottom: 10px; }
+    .item { padding: 14px 0; }
+    .item-text { font-size: 13px; line-height: 1.5; }
+    .item-tag { font-size: 8px; padding: 2px 6px; }
+    .item-votes { gap: 8px; flex-wrap: wrap; }
+    .vbtn { padding: 6px 12px; font-size: 12px; min-width: 44px; }
+    .net { font-size: 12px; }
+    
+    .lb-row { padding: 12px 0; gap: 10px; }
+    .lb-n { font-size: 10px; width: 18px; }
+    .lb-t { font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .lb-score { font-size: 10px; }
+    
+    .submit-h { font-size: 16px; }
+    .submit-sub { font-size: 11px; margin-bottom: 24px; }
+    label { font-size: 9px; }
+    textarea, input[type="email"] { font-size: 14px; padding: 14px; }
+    textarea { height: 100px; }
+    .radio-group { flex-direction: column; gap: 8px; }
+    .radio-opt { padding: 14px; }
+    .radio-opt .rt { font-size: 13px; }
+    .submit-btn { padding: 14px; font-size: 14px; }
+    .legal { font-size: 9px; }
+    
+    .onboard-modal { padding: 24px 20px; margin: 16px; }
+    .onboard-title { font-size: 16px; }
+    .onboard-text { font-size: 12px; line-height: 1.6; }
+    .onboard-icon { width: 40px; height: 40px; margin-bottom: 12px; }
+    .onboard-btns { flex-direction: column; gap: 8px; }
+    .onboard-btn { padding: 14px; }
+    
+    .shuffle { padding: 12px; font-size: 11px; }
+    
+    .toast, .success-banner, .cooldown-text { font-size: 11px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo" onclick="go('feed',document.querySelectorAll('nav button')[0])">predict<em>.win</em></div>
+  <nav>
+    <button class="on" onclick="go('feed',this)">Feed</button>
+    <button onclick="go('lb',this)">Leaderboard</button>
+    <button onclick="go('sub',this)">Submit</button>
+  </nav>
+  <div class="timer" id="timer-val"></div>
+</header>
+
+<main>
+  <div class="page on" id="page-feed">
+    <div class="section-label">Pinned</div>
+    <div id="pinned-list"></div>
+    <div class="spacer"></div>
+    <div class="section-label">All predictions</div>
+    <div id="normal-list"></div>
+    <button class="shuffle" onclick="doShuffle()"> shuffle</button>
+  </div>
+
+  <div class="page" id="page-lb">
+    <div class="section-label">Most liked  April 2026</div>
+    <div id="lb-list"></div>
+  </div>
+
+  <div class="page" id="page-sub">
+    <div class="success-banner" id="success-banner">Payment successful! Your prediction has been pinned.</div>
+    <div class="submit-h">Make a prediction.</div>
+    <div class="submit-sub">Predict anything. AI judges closest to reality at month end.<br>30% to winner  15% to each top 3</div>
+    <label>Your prediction</label>
+    <textarea id="pred-input" placeholder="e.g. Tesla hits $500 before April ends..."></textarea>
+    <label>Your email <span style="font-weight:normal;text-transform:none;letter-spacing:0;">(for winner notification)</span></label>
+    <input type="email" id="email-input" placeholder="you@example.com">
+    <label>Entry type</label>
+    <div class="radio-group">
+      <div class="radio-opt on" id="opt-free" onclick="pick('free')">
+        <div class="rt">Free</div>
+        <div class="rd">Normal feed placement</div>
+      </div>
+      <div class="radio-opt" id="opt-pin" onclick="pick('pin')">
+        <div class="rt">Pin  $1</div>
+        <div class="rd">Pushed to top of feed</div>
+      </div>
+    </div>
+    <button class="submit-btn" id="submit-btn" onclick="doSubmit()">Submit prediction</button>
+    <div class="cooldown-text" id="cooldown-text"></div>
+    <div class="legal">No purchase necessary. Free and paid entries are equally eligible to win.<br>Winners notified by email at month end.</div>
+    <div class="toast" id="toast">Prediction submitted. Good luck.</div>
+  </div>
+</main>
+
+<div class="onboard-overlay" id="onboard-overlay">
+  <div class="onboard-modal">
+    <div class="onboard-dots">
+      <div class="onboard-dot on" id="dot-0"></div>
+      <div class="onboard-dot" id="dot-1"></div>
+      <div class="onboard-dot" id="dot-2"></div>
+      <div class="onboard-dot" id="dot-3"></div>
+    </div>
+    
+    <div class="onboard-step on" id="step-0">
+      <div class="onboard-icon"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M18 9l-5 5-4-4-3 3"/></svg></div>
+      <div class="onboard-title">Welcome to predict.win</div>
+      <div class="onboard-text">
+        Make predictions about anything. At the end of each month, the most accurate predictions win prizes.<br><br>
+        <span class="onboard-highlight">30% to winner</span> <span class="onboard-highlight">15% to top 3</span>
+      </div>
+      <div class="onboard-btns">
+        <button class="onboard-btn primary" onclick="onboardNext()">Next</button>
+      </div>
+    </div>
+    
+    <div class="onboard-step" id="step-1">
+      <div class="onboard-icon"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12l7-7 7 7"/></svg></div>
+      <div class="onboard-title">Vote on Predictions</div>
+      <div class="onboard-text">
+        Browse predictions from the community. Use the <span class="onboard-highlight">Up</span> and <span class="onboard-highlight">Down</span> buttons to vote on which predictions you think will come true.<br><br>
+        Your votes help surface the best predictions for everyone.
+      </div>
+      <div class="onboard-btns">
+        <button class="onboard-btn secondary" onclick="onboardPrev()">Back</button>
+        <button class="onboard-btn primary" onclick="onboardNext()">Next</button>
+      </div>
+    </div>
+    
+    <div class="onboard-step" id="step-2">
+      <div class="onboard-icon"><svg viewBox="0 0 24 24"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg></div>
+      <div class="onboard-title">Leaderboard</div>
+      <div class="onboard-text">
+        Check the leaderboard to see which predictions are getting the most community support. Top predictions at month end become winners.<br><br>
+        <span class="onboard-highlight">Pinned</span> predictions are paid placements, not rankings.
+      </div>
+      <div class="onboard-btns">
+        <button class="onboard-btn secondary" onclick="onboardPrev()">Back</button>
+        <button class="onboard-btn primary" onclick="onboardNext()">Next</button>
+      </div>
+    </div>
+    
+    <div class="onboard-step" id="step-3">
+      <div class="onboard-icon"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></div>
+      <div class="onboard-title">Submit Your Prediction</div>
+      <div class="onboard-text">
+        Have a prediction? Submit it on the <span class="onboard-highlight">Submit</span> tab.<br><br>
+        Choose <span class="onboard-highlight">Free</span> for normal placement or <span class="onboard-highlight">Pin $1</span> to boost visibility at the top of the feed.
+      </div>
+      <div class="onboard-btns">
+        <button class="onboard-btn secondary" onclick="onboardPrev()">Back</button>
+        <button class="onboard-btn primary" onclick="onboardFinish()">Get Started</button>
+      </div>
+    </div>
+    
+    <div class="onboard-skip">
+      <button onclick="onboardFinish()">Skip tutorial</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = 'https://urfyyebcgcqszfunzjjj.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVyZnl5ZWJjZ2Nxc3pmdW56ampqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyNDM3MzcsImV4cCI6MjA5MDgxOTczN30.7x-I2k6PePdwz9J2qYWsiFWAXDF84Cw-Ll2_EgzpJ0k';
+
+const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let allPredictions = [];
+const voted = {};
+let entryType = 'free';
+let userId = localStorage.getItem('userId') || crypto.randomUUID();
+localStorage.setItem('userId', userId);
+
+let lastSubmitTime = parseInt(localStorage.getItem('lastSubmitTime') || '0');
+const SUBMIT_COOLDOWN_MS = 30000;
+
+const USER_VOTE_SPAM_THRESHOLD = 5;
+const USER_VOTE_SPAM_WINDOW = 8000;
+const USER_VOTE_LOCK_MS = 600000;
+
+let userVoteHistory = JSON.parse(localStorage.getItem('userVoteHistory') || '[]');
+let userVotingPaused = parseInt(localStorage.getItem('userVotingPaused') || '0');
+
+const STRIPE_KEY = 'pk_test_51T7rGtRm0nBXhccAUBv49Q4cFxDXFXj4JNdoChebvzuXBBk1OJCeygRD8KUnOI9eWThf3MMnJyWJ25GTyd2MWdzb00anjx0Eb4';
+
+let paymentCheckInterval = null;
+
+let onboardStep = 0;
+const TOTAL_STEPS = 4;
+
+function onboardShow() {
+  document.getElementById('onboard-overlay').classList.add('on');
+}
+
+function onboardUpdateDots() {
+  for (let i = 0; i < TOTAL_STEPS; i++) {
+    const dot = document.getElementById('dot-' + i);
+    if (dot) dot.classList.toggle('on', i === onboardStep);
+    const step = document.getElementById('step-' + i);
+    if (step) step.classList.toggle('on', i === onboardStep);
+  }
+}
+
+function onboardNext() {
+  if (onboardStep < TOTAL_STEPS - 1) {
+    onboardStep++;
+    onboardUpdateDots();
+  }
+}
+
+function onboardPrev() {
+  if (onboardStep > 0) {
+    onboardStep--;
+    onboardUpdateDots();
+  }
+}
+
+function onboardFinish() {
+  document.getElementById('onboard-overlay').classList.remove('on');
+  localStorage.setItem('onboarded', 'true');
+}
+
+function checkPaymentStatus() {
+  const saved = localStorage.getItem('pendingPrediction');
+  if (saved) {
+    if (!paymentCheckInterval) {
+      paymentCheckInterval = setInterval(() => {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('payment') === 'success') {
+          clearInterval(paymentCheckInterval);
+          paymentCheckInterval = null;
+          const p = JSON.parse(saved);
+          localStorage.removeItem('pendingPrediction');
+          submitPrediction(p.text, p.email, true);
+          
+          const banner = document.getElementById('success-banner');
+          banner.classList.add('on');
+          setTimeout(() => banner.classList.remove('on'), 30000);
+          
+          history.replaceState(null, '', window.location.pathname);
+        }
+      }, 500);
+    }
+  }
+}
+
+function cleanupUserPause() {
+  const now = Date.now();
+  if (userVotingPaused && now > userVotingPaused) {
+    userVotingPaused = 0;
+    localStorage.setItem('userVotingPaused', '0');
+    userVoteHistory = [];
+    localStorage.setItem('userVoteHistory', '[]');
+  }
+}
+
+async function init() {
+  cleanupUserPause();
+  
+  if (!localStorage.getItem('onboarded')) {
+    setTimeout(onboardShow, 500);
+  }
+  
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('payment') !== 'success') {
+    localStorage.removeItem('pendingPrediction');
+  }
+  
+  checkPaymentStatus();
+  
+  const { data, error } = await _supabase.from('predictions').select('*').order('created_at', { ascending: false });
+  if (data) {
+    let idCounter = 0;
+    allPredictions = data.map((p, i) => {
+      if (!p.id) p.id = p.text + '_' + i + '_' + Date.now();
+      return p;
+    });
+    
+    const savedVotes = JSON.parse(localStorage.getItem('userVotes') || '{}');
+    allPredictions.forEach((p, i) => {
+      if (savedVotes[p.id]) voted[i] = savedVotes[p.id];
+    });
+    
+    renderFeed(false);
+  }
+
+  _supabase
+    .channel('predictions')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'predictions' }, (payload) => {
+      if (payload.eventType === 'INSERT') {
+        const exists = allPredictions.find(p => p.id === payload.new.id);
+        if (!exists) {
+          const newPred = { ...payload.new, id: payload.new.text + '_' + Date.now() };
+          allPredictions.unshift(newPred);
+          renderFeed(false);
+        }
+      } else if (payload.eventType === 'UPDATE') {
+        const idx = allPredictions.findIndex(p => p.id === payload.new.id);
+        if (idx !== -1) {
+          allPredictions[idx] = payload.new;
+        } else {
+          const newPred = { ...payload.new, id: payload.new.text + '_' + Date.now() };
+          allPredictions.unshift(newPred);
+        }
+        renderFeed(false);
+        renderLB();
+      }
+    })
+    .subscribe();
+}
+
+function updateSubmitCooldown() {
+  const now = Date.now();
+  const remaining = Math.max(0, SUBMIT_COOLDOWN_MS - (now - lastSubmitTime));
+  const btn = document.getElementById('submit-btn');
+  const text = document.getElementById('cooldown-text');
+  
+  if (remaining > 0) {
+    btn.disabled = true;
+    const secs = Math.ceil(remaining / 1000);
+    text.textContent = 'Wait ' + secs + 's before next prediction';
+  } else {
+    btn.disabled = false;
+    text.textContent = '';
+  }
+}
+
+async function doSubmit() {
+  const now = Date.now();
+  if (now - lastSubmitTime < SUBMIT_COOLDOWN_MS) {
+    return;
+  }
+
+  const val = document.getElementById('pred-input').value.trim();
+  const email = document.getElementById('email-input').value.trim();
+  if (!val) return;
+  if (val.length < 10 || val.length > 500) {
+    alert('Prediction must be 10-500 characters');
+    return;
+  }
+
+  const isPaidPin = entryType === 'pin';
+  
+  if (isPaidPin) {
+    localStorage.setItem('pendingPrediction', JSON.stringify({ text: val, email: email }));
+    
+    const currentUrl = window.location.href.split('?')[0];
+    const redirectUrl = encodeURIComponent(currentUrl + '?payment=success');
+    const paymentLink = 'https://buy.stripe.com/test_14A6oJ76IaCk1cJ5jc8N200?prefilled_email=' + encodeURIComponent(email) + '&redirect_url=' + redirectUrl;
+    window.open(paymentLink, '_blank');
+    
+    window.addEventListener('storage', (e) => {
+      if (e.key === 'processPayment' && e.newValue === 'true') {
+        localStorage.removeItem('processPayment');
+        const saved = localStorage.getItem('pendingPrediction');
+        if (saved) {
+          const p = JSON.parse(saved);
+          localStorage.removeItem('pendingPrediction');
+          submitPrediction(p.text, p.email, true);
+        }
+      }
+    });
+  } else {
+    await submitPrediction(val, email, false);
+  }
+}
+
+async function submitPrediction(text, email, isPinned) {
+  if (isPinned) {
+    const pinned = allPredictions.filter(p => p.is_pinned);
+    if (pinned.length >= 7) {
+      const oldest = pinned.reduce((oldest, p) => 
+        new Date(p.created_at) < new Date(oldest.created_at) ? p : oldest
+      );
+      await _supabase.from('predictions').update({ is_pinned: false }).eq('created_at', oldest.created_at);
+      oldest.is_pinned = false;
+    }
+  }
+  
+  const entry = { text: text, email: email, upvotes: 0, downvotes: 0, is_pinned: isPinned, is_winner: false, user_id: userId };
+  const { data, error } = await _supabase.from('predictions').insert([entry]).select();
+
+  if (!error && data) {
+    lastSubmitTime = Date.now();
+    localStorage.setItem('lastSubmitTime', lastSubmitTime.toString());
+    const newPred = { ...data[0], id: data[0].text + '_' + Date.now() };
+    allPredictions.unshift(newPred);
+    document.getElementById('pred-input').value = '';
+    document.getElementById('email-input').value = '';
+    const toast = document.getElementById('toast');
+    toast.style.display = 'block';
+    setTimeout(() => toast.style.display = 'none', 2800);
+    renderFeed(false);
+  }
+}
+
+function checkUserVoteSpam(newPredId) {
+  const now = Date.now();
+  
+  userVoteHistory = userVoteHistory.filter(v => now - v.time < USER_VOTE_SPAM_WINDOW);
+  
+  if (newPredId) {
+    userVoteHistory.push({ predId: newPredId, time: now });
+  }
+  
+  localStorage.setItem('userVoteHistory', JSON.stringify(userVoteHistory));
+  
+  const uniquePreds = new Set(userVoteHistory.map(v => v.predId)).size;
+  console.log('Vote history:', userVoteHistory.length, 'unique preds:', uniquePreds);
+  
+  if (uniquePreds >= USER_VOTE_SPAM_THRESHOLD && userVotingPaused === 0) {
+    userVotingPaused = now + USER_VOTE_LOCK_MS;
+    console.log('SPAM DETECTED! Paused for 10 minutes');
+    localStorage.setItem('userVotingPaused', userVotingPaused.toString());
+    return true;
+  }
+  
+  return false;
+}
+
+async function vote(idx, dir) {
+  const now = Date.now();
+  
+  if (userVotingPaused && now < userVotingPaused) {
+    const remaining = Math.ceil((userVotingPaused - now) / 1000);
+    alert('Slow down! Wait ' + remaining + 's before voting again.');
+    return;
+  }
+  
+  
+  const p = allPredictions[idx];
+  if (!p || !p.id) {
+    console.error('Cannot vote: prediction not found or has no ID');
+    return;
+  }
+  
+  if (p.user_id === userId) {
+    return;
+  }
+
+  const prev = voted[idx];
+  let newUp = p.upvotes, newDown = p.downvotes;
+
+  if (prev === dir) {
+    if (dir === 'u') newUp--; else newDown--;
+    voted[idx] = '';
+  } else {
+    if (prev === 'u') newUp--; if (prev === 'd') newDown--;
+    if (dir === 'u') newUp++; else newDown++;
+    voted[idx] = dir;
+  }
+
+  if (dir === 'u' || dir === 'd') {
+    await _supabase.from('predictions').update({ upvotes: newUp, downvotes: newDown }).eq('created_at', p.created_at);
+  }
+  p.upvotes = newUp;
+  p.downvotes = newDown;
+  
+  const votesToSave = {};
+  Object.keys(voted).forEach(i => {
+    if (voted[i]) votesToSave[allPredictions[i].id] = voted[i];
+  });
+  localStorage.setItem('userVotes', JSON.stringify(votesToSave));
+  
+  renderFeed(false);
+}
+
+function net(p) { return p.upvotes - p.downvotes; }
+
+function makeItem(p, idx) {
+  const n = net(p);
+  const v = voted[idx] || '';
+  
+  let tags = '';
+  if (p.is_pinned) tags += '<span class="item-tag">pinned</span><br>';
+  if (p.is_winner) tags += '<span class="item-tag winner">winner</span><br>';
+  
+  return '<div class="item">' +
+    '<div class="item-body">' +
+      tags +
+      '<div class="item-text">' + p.text + '</div>' +
+      '<div class="item-votes">' +
+        '<button class="vbtn ' + (v==='u'?'up':'') + '" onclick="vote(' + idx + ',\'u\')">▲ ' + p.upvotes + '</button>' +
+        '<button class="vbtn ' + (v==='d'?'dn':'') + '" onclick="vote(' + idx + ',\'d\')">▼ ' + p.downvotes + '</button>' +
+        '<span class="net">' + (n>0?'+':'') + n + '</span>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+}
+
+function renderFeed(shuffle) {
+  const pinned = allPredictions.filter(p => p.is_pinned);
+  let normal = allPredictions.map((p, i) => ({ ...p, _i: i })).filter(p => !p.is_pinned);
+  if (shuffle) normal = normal.sort(() => Math.random() - 0.5);
+
+  document.getElementById('pinned-list').innerHTML = pinned.map((p) => {
+    const idx = allPredictions.indexOf(p);
+    return makeItem(p, idx);
+  }).join('');
+  
+  document.getElementById('normal-list').innerHTML = normal.map(p => makeItem(p, p._i)).join('');
+}
+
+function renderLB() {
+  const sorted = [...allPredictions].sort((a, b) => net(b) - net(a));
+  document.getElementById('lb-list').innerHTML = sorted.map((p, rank) =>
+    '<div class="lb-row ' + (p.is_winner ? 'winner' : '') + '">' +
+      '<div class="lb-n ' + (rank < 3 ? 'hi' : '') + '">' + (rank + 1) + '</div>' +
+      '<div class="lb-t">' + p.text + '</div>' +
+      '<div class="lb-score">' + (net(p) > 0 ? '+' : '') + net(p) + '</div>' +
+    '</div>'
+  ).join('');
+}
+
+function go(id, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('on'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('on'));
+  document.getElementById('page-' + id).classList.add('on');
+  btn.classList.add('on');
+  if (id === 'lb') renderLB();
+  if (id === 'sub') updateSubmitCooldown();
+}
+
+function doShuffle() { renderFeed(true); }
+
+function pick(t) {
+  entryType = t;
+  document.getElementById('opt-free').classList.toggle('on', t === 'free');
+  document.getElementById('opt-pin').classList.toggle('on', t === 'pin');
+}
+
+function updateTimer() {
+  const now = new Date();
+  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+  const diff = endOfMonth - now;
+  
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+  
+  document.getElementById('timer-val').textContent = days + 'd ' + hours + 'h ' + minutes + 'm ' + seconds + 's left';
+}
+
+async function seedData() {
+  const predictions = [
+    "Bitcoin reaches an astonishing $500,000 per coin by the final day of April.",
+    "Former President Donald Trump officially announces his 2028 presidential campaign.",
+    "SpaceX achieves landing their Starship rocket on Mars.",
+    "Apple announces iPhone 17 with holographic display.",
+    "Tesla robotaxi service launches in San Francisco.",
+    "An AI-generated film wins Best Picture Oscar.",
+    "Elon Musk acquires Manchester United."
+  ];
+  
+  for (let i = 0; i < predictions.length; i++) {
+    const isPinned = i < 7;
+    const entry = {
+      text: predictions[i],
+      email: 'user' + i + '@example.com',
+      upvotes: Math.floor(Math.random() * 500),
+      downvotes: Math.floor(Math.random() * 100),
+      is_pinned: isPinned,
+      is_winner: false,
+      user_id: crypto.randomUUID()
+    };
+    await _supabase.from('predictions').insert([entry]);
+  }
+  alert('Seeded ' + predictions.length + ' predictions!');
+  init();
+}
+
+updateTimer();
+setInterval(updateTimer, 1000);
+setInterval(updateSubmitCooldown, 1000);
+setInterval(cleanupUserPause, 5000);
+
+init();
+</script>
+</body>
+</html>
